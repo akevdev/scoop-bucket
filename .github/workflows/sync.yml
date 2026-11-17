@@ -37,7 +37,7 @@ jobs:
             -p "akev-$version-packaging.zip" -p SHA256SUMS -p SHA256SUMS.sigstore.json
           cd "$work"
           cosign verify-blob --bundle SHA256SUMS.sigstore.json \
-            --certificate-identity-regexp 'github.com/akevdev/akev' \
+            --certificate-identity-regexp '^https://github.com/akevdev/akev/' \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com SHA256SUMS
           grep " akev-$version-packaging.zip\$" SHA256SUMS | sha256sum -c -
           unzip -q "akev-$version-packaging.zip" -d rendered
