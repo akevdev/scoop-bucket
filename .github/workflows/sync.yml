@@ -1,0 +1,56 @@
+name: sync
+
+# Copies bucket/akev.json from the latest Akev release's packaging.zip (rendered by
+# scripts/package-manifests.sh in the release workflow), after checking that zip against the
+# release's Sigstore-signed SHA256SUMS. Runs every 6 hours and on demand.
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sigstore/cosign-installer@v3
+      - name: Update from the latest release
+        id: update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(gh api repos/akevdev/akev/releases/latest --jq .tag_name)
+          version=${tag#v}
+          current=$(jq -r .version bucket/akev.json)
+          if [ "$version" = "$current" ]; then
+            echo "Already at $version."
+            exit 0
+          fi
+          work=$(mktemp -d)
+          gh release download "$tag" -R akevdev/akev -D "$work" \
+            -p "akev-$version-packaging.zip" -p SHA256SUMS -p SHA256SUMS.sigstore.json
+          cd "$work"
+          cosign verify-blob --bundle SHA256SUMS.sigstore.json \
+            --certificate-identity-regexp 'github.com/akevdev/akev' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com SHA256SUMS
+          grep " akev-$version-packaging.zip\$" SHA256SUMS | sha256sum -c -
+          unzip -q "akev-$version-packaging.zip" -d rendered
+          cd "$GITHUB_WORKSPACE"
+          cp "$work/rendered/scoop/akev.json" bucket/akev.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bucket
+          git commit -m "akev: Update to version $version"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Test the update
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run test.yml --ref main
