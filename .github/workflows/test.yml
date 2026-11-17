@@ -25,12 +25,11 @@ jobs:
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $env:GITHUB_PATH
-      - name: Install akev from this bucket
+      - name: Install akev from this manifest
         shell: pwsh
         run: |
-          scoop bucket add akev "$env:GITHUB_WORKSPACE"
-          scoop install akev/akev
-          scoop info akev/akev
+          scoop install "$env:GITHUB_WORKSPACE\bucket\akev.json"
+          scoop info akev
           akev --version
           if ($LASTEXITCODE -ne 0) { exit 1 }
           scoop uninstall akev
@@ -49,6 +48,19 @@ jobs:
         shell: pwsh
         run: |
           $scoop = scoop prefix scoop
-          & "$scoop\bin\checkver.ps1" -App akev -Dir "$env:GITHUB_WORKSPACE\bucket"
-          & "$scoop\bin\checkhashes.ps1" -App akev -Dir "$env:GITHUB_WORKSPACE\bucket"
-          & "$scoop\bin\checkurls.ps1" -App akev -Dir "$env:GITHUB_WORKSPACE\bucket"
+          New-Item -ItemType Directory -Force "$(Resolve-Path ~)\scoop\cache" | Out-Null
+          # Rebuild the manifest for the latest release through checkver + autoupdate. If that
+          # works, the result equals the committed manifest (same URLs and hashes).
+          $out = & "$scoop\bin\checkver.ps1" -App akev -Dir "$env:GITHUB_WORKSPACE\bucket" -ForceUpdate *>&1 | Out-String
+          $out
+          if ($out -match 'ERROR') { throw 'checkver/autoupdate failed' }
+          $new = Get-Content bucket\akev.json -Raw | ConvertFrom-Json
+          $old = git show HEAD:bucket/akev.json | Out-String | ConvertFrom-Json
+          foreach ($arch in '64bit', 'arm64') {
+            foreach ($field in 'url', 'hash') {
+              $a = $old.architecture.$arch.$field; $b = $new.architecture.$arch.$field
+              "$arch $field`n  committed: $a`n  rebuilt:   $b"
+              if ($a -ne $b) { throw "autoupdate gives a different $arch $field" }
+            }
+          }
+          if ($old.version -ne $new.version) { throw "version $($old.version) vs $($new.version)" }

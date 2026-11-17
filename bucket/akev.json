@@ -14,7 +14,9 @@
         }
     },
     "bin": "akev.exe",
-    "checkver": "github",
+    "checkver": {
+        "github": "https://github.com/akevdev/akev"
+    },
     "autoupdate": {
         "architecture": {
             "64bit": {
