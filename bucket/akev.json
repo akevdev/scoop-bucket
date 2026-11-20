@@ -1,16 +1,16 @@
 {
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Fast HTTP(S) debugging proxy: intercept, inspect, mock and replay traffic (command line).",
     "homepage": "https://akev.dev",
     "license": "AGPL-3.0-or-later",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/akevdev/akev/releases/download/v0.1.0/akev-0.1.0-x86_64-pc-windows-msvc.zip",
-            "hash": "5f8ea42ddea9926ad962393e926f42421983415c781885a2f187b8e5f5cecfd4"
+            "url": "https://github.com/akevdev/akev/releases/download/v0.1.1/akev-0.1.1-x86_64-pc-windows-msvc.zip",
+            "hash": "90c822763576d2b300325abfcda9acbfa094b1fd132b11c7b2183a0a87431dcb"
         },
         "arm64": {
-            "url": "https://github.com/akevdev/akev/releases/download/v0.1.0/akev-0.1.0-aarch64-pc-windows-msvc.zip",
-            "hash": "aff06b7a45631b92c4614c71ab3d580a786f344966c1e3b7e13952ec8f4f9f09"
+            "url": "https://github.com/akevdev/akev/releases/download/v0.1.1/akev-0.1.1-aarch64-pc-windows-msvc.zip",
+            "hash": "a5c61c44ddd01d7719d414fc89556ac95c71f99a21ddd1332d2e00b7dfadc277"
         }
     },
     "bin": "akev.exe",
